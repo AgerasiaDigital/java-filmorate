@@ -5,6 +5,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
 
 import java.util.Map;
@@ -25,5 +26,12 @@ public class GlobalExceptionHandler {
     public Map<String, String> handleException(Exception ex) {
         log.error("Внутренняя ошибка сервера: {}", ex.getMessage(), ex);
         return Map.of("error", "Внутренняя ошибка сервера");
+    }
+
+    @ExceptionHandler(NotFoundException.class)
+    @ResponseStatus(HttpStatus.NOT_FOUND)
+    public Map<String, String> handleNotFoundException(NotFoundException ex) {
+        log.error("Объект не найден: {}", ex.getMessage());
+        return Map.of("error", ex.getMessage());
     }
 }
