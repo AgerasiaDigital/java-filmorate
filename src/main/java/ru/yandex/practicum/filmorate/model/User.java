@@ -14,17 +14,17 @@ public class User {
     @NotNull(groups = Update.class, message = "ID обязателен для обновления")
     private Long id;
 
-    @NotBlank(groups = Create.class, message = "Электронная почта не может быть пустой")
-    @Email(message = "Электронная почта должна содержать символ @")
+    @NotBlank(groups = {Create.class}, message = "Электронная почта не может быть пустой")
+    @Email(groups = {Create.class, Update.class}, message = "Электронная почта должна содержать символ @")
     private String email;
 
-    @NotBlank(groups = Create.class, message = "Логин не может быть пустым")
-    @Pattern(regexp = "^\\S+$", message = "Логин не может содержать пробелы")
+    @NotBlank(groups = {Create.class}, message = "Логин не может быть пустым")
+    @Pattern(regexp = "^\\S+$", groups = {Create.class, Update.class}, message = "Логин не может содержать пробелы")
     private String login;
 
     private String name;
 
-    @PastOrPresent(message = "Дата рождения не может быть в будущем")
+    @PastOrPresent(groups = {Create.class, Update.class}, message = "Дата рождения не может быть в будущем")
     @JsonFormat(pattern = "yyyy-MM-dd")
     private LocalDate birthday;
 }
