@@ -1,11 +1,12 @@
 package ru.yandex.practicum.filmorate.controller;
 
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
-
-import jakarta.validation.Valid;
-import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.model.User;
+import ru.yandex.practicum.filmorate.exception.NotFoundException;
+import ru.yandex.practicum.filmorate.validation.Create;
+import ru.yandex.practicum.filmorate.validation.Update;
 
 import java.util.Collection;
 import java.util.HashMap;
@@ -15,19 +16,23 @@ import java.util.Map;
 @RestController
 @RequestMapping("/users")
 public class UserController {
+
     private final Map<Long, User> users = new HashMap<>();
     private long currentId = 1;
 
     @GetMapping
     public Collection<User> getAllUsers() {
-        log.info("Получен запрос на получение всех пользователей. Количество пользователей: {}", users.size());
+        log.info("Получен запрос на получение всех пользователей");
         return users.values();
     }
 
     @PostMapping
-    public User createUser(@Valid @RequestBody User user) {
+    public User createUser(@Validated(Create.class) @RequestBody User user) {
         log.info("Получен запрос на создание пользователя: {}", user.getLogin());
-        validateUser(user);
+
+        if (user.getName() == null || user.getName().isBlank()) {
+            user.setName(user.getLogin());
+        }
 
         user.setId(currentId++);
         users.put(user.getId(), user);
@@ -37,26 +42,35 @@ public class UserController {
     }
 
     @PutMapping
-    public User updateUser(@Valid @RequestBody User user) {
+    public User updateUser(@Validated(Update.class) @RequestBody User user) {
         log.info("Получен запрос на обновление пользователя с ID: {}", user.getId());
-        validateUser(user);
 
-        if (user.getId() == null || !users.containsKey(user.getId())) {
-            log.error("Пользователь с ID {} не найден", user.getId());
+        if (!users.containsKey(user.getId())) {
             throw new NotFoundException("Пользователь с ID " + user.getId() + " не найден");
         }
 
-        users.put(user.getId(), user);
-        log.info("Пользователь с ID {} обновлен", user.getId());
-        return user;
-    }
+        User existingUser = users.get(user.getId());
 
-    private void validateUser(User user) {
-        if (user.getName() == null || user.getName().isBlank()) {
-            log.info("Имя пользователя пустое, используется логин: {}", user.getLogin());
-            user.setName(user.getLogin());
+        // Обновляем только переданные поля
+        if (user.getEmail() != null && !user.getEmail().isBlank()) {
+            existingUser.setEmail(user.getEmail());
         }
+        if (user.getLogin() != null && !user.getLogin().isBlank()) {
+            existingUser.setLogin(user.getLogin());
+        }
+        if (user.getName() != null) {
+            if (user.getName().isBlank()) {
+                existingUser.setName(existingUser.getLogin());
+            } else {
+                existingUser.setName(user.getName());
+            }
+        }
+        if (user.getBirthday() != null) {
+            existingUser.setBirthday(user.getBirthday());
+        }
+
+        users.put(existingUser.getId(), existingUser);
+        log.info("Пользователь с ID {} обновлен", existingUser.getId());
+        return existingUser;
     }
-
-
 }

@@ -37,6 +37,104 @@ public class FilmControllerTest {
     }
 
     @Test
+    public void shouldRejectFilmWithEmptyName() throws Exception {
+        Film film = new Film();
+        film.setName("");
+        film.setDescription("Test Description");
+        film.setReleaseDate(LocalDate.of(2000, 1, 1));
+        film.setDuration(120);
+
+        mockMvc.perform(post("/films")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(film)))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    public void shouldRejectDescriptionWith201Characters() throws Exception {
+        Film film = new Film();
+        film.setName("Test Film");
+        film.setDescription("A".repeat(201)); // 201 символ
+        film.setReleaseDate(LocalDate.of(2000, 1, 1));
+        film.setDuration(120);
+
+        mockMvc.perform(post("/films")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(film)))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    public void shouldAcceptDescriptionWith200Characters() throws Exception {
+        Film film = new Film();
+        film.setName("Test Film");
+        film.setDescription("A".repeat(200)); // Ровно 200 символов
+        film.setReleaseDate(LocalDate.of(2000, 1, 1));
+        film.setDuration(120);
+
+        mockMvc.perform(post("/films")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(film)))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    public void shouldRejectReleaseDateBefore1895() throws Exception {
+        Film film = new Film();
+        film.setName("Very Old Film");
+        film.setDescription("Description");
+        film.setReleaseDate(LocalDate.of(1895, 12, 27)); // День до минимальной даты
+        film.setDuration(120);
+
+        mockMvc.perform(post("/films")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(film)))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    public void shouldAcceptMinimalReleaseDate() throws Exception {
+        Film film = new Film();
+        film.setName("Historical Film");
+        film.setDescription("Description");
+        film.setReleaseDate(LocalDate.of(1895, 12, 28)); // Минимальная допустимая дата
+        film.setDuration(120);
+
+        mockMvc.perform(post("/films")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(film)))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    public void shouldRejectZeroDuration() throws Exception {
+        Film film = new Film();
+        film.setName("Test Film");
+        film.setDescription("Description");
+        film.setReleaseDate(LocalDate.of(2000, 1, 1));
+        film.setDuration(0);
+
+        mockMvc.perform(post("/films")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(film)))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    public void shouldRejectNegativeDuration() throws Exception {
+        Film film = new Film();
+        film.setName("Test Film");
+        film.setDescription("Description");
+        film.setReleaseDate(LocalDate.of(2000, 1, 1));
+        film.setDuration(-1);
+
+        mockMvc.perform(post("/films")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(film)))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
     public void shouldGetAllFilms() throws Exception {
         mockMvc.perform(get("/films"))
                 .andExpect(status().isOk());

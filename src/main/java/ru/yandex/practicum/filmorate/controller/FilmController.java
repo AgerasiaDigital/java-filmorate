@@ -1,12 +1,13 @@
 package ru.yandex.practicum.filmorate.controller;
 
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
-import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.model.Film;
-import ru.yandex.practicum.filmorate.exception.ValidationException;
+import ru.yandex.practicum.filmorate.exception.NotFoundException;
+import ru.yandex.practicum.filmorate.validation.Create;
+import ru.yandex.practicum.filmorate.validation.Update;
 
-import java.time.LocalDate;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
@@ -26,10 +27,8 @@ public class FilmController {
     }
 
     @PostMapping
-    public Film createFilm(@RequestBody Film film) {
-        log.info("Получен запрос на создание фильма: {}", film != null ? film.getName() : "null");
-
-        validateFilm(film);
+    public Film createFilm(@Validated(Create.class) @RequestBody Film film) {
+        log.info("Получен запрос на создание фильма: {}", film.getName());
 
         film.setId(currentId++);
         films.put(film.getId(), film);
@@ -39,39 +38,31 @@ public class FilmController {
     }
 
     @PutMapping
-    public Film updateFilm(@RequestBody Film film) {
-        log.info("Получен запрос на обновление фильма с ID: {}", film != null ? film.getId() : "null");
+    public Film updateFilm(@Validated(Update.class) @RequestBody Film film) {
+        log.info("Получен запрос на обновление фильма с ID: {}", film.getId());
 
-        validateFilm(film);
-
-        if (film.getId() == null || !films.containsKey(film.getId())) {
+        if (!films.containsKey(film.getId())) {
             throw new NotFoundException("Фильм с ID " + film.getId() + " не найден");
         }
 
-        films.put(film.getId(), film);
-        log.info("Фильм с ID {} обновлен", film.getId());
-        return film;
-    }
+        Film existingFilm = films.get(film.getId());
 
-    private void validateFilm(Film film) {
-        if (film == null) {
-            throw new ValidationException("Фильм не может быть null");
+        // Обновляем только переданные поля
+        if (film.getName() != null && !film.getName().isBlank()) {
+            existingFilm.setName(film.getName());
+        }
+        if (film.getDescription() != null) {
+            existingFilm.setDescription(film.getDescription());
+        }
+        if (film.getReleaseDate() != null) {
+            existingFilm.setReleaseDate(film.getReleaseDate());
+        }
+        if (film.getDuration() != null) {
+            existingFilm.setDuration(film.getDuration());
         }
 
-        if (film.getName() == null || film.getName().isBlank()) {
-            throw new ValidationException("Название не может быть пустым");
-        }
-
-        if (film.getDescription() != null && film.getDescription().length() > 200) {
-            throw new ValidationException("Максимальная длина описания — 200 символов");
-        }
-
-        if (film.getReleaseDate() != null && film.getReleaseDate().isBefore(LocalDate.of(1895, 12, 28))) {
-            throw new ValidationException("Дата релиза не может быть раньше 28 декабря 1895 года");
-        }
-
-        if (film.getDuration() != null && film.getDuration() <= 0) {
-            throw new ValidationException("Продолжительность фильма должна быть положительным числом");
-        }
+        films.put(existingFilm.getId(), existingFilm);
+        log.info("Фильм с ID {} обновлен", existingFilm.getId());
+        return existingFilm;
     }
 }
