@@ -1,7 +1,6 @@
 package ru.yandex.practicum.filmorate.model;
 
 import lombok.Data;
-import com.fasterxml.jackson.annotation.JsonFormat;
 import ru.yandex.practicum.filmorate.validation.Create;
 import ru.yandex.practicum.filmorate.validation.Update;
 
@@ -11,20 +10,23 @@ import java.time.LocalDate;
 @Data
 public class User {
 
-    @NotNull(groups = Update.class, message = "ID обязателен для обновления")
-    private Long id;
+    @NotNull(groups = Update.class, message = "Id должен быть указан")
+    @Null(groups = Create.class, message = "Id должен отсутствовать")
+    private Integer id;
 
-    @NotBlank(groups = {Create.class}, message = "Электронная почта не может быть пустой")
-    @Email(groups = {Create.class, Update.class}, message = "Электронная почта должна содержать символ @")
+    @NotBlank(groups = {Create.class, Update.class}, message = "Email не может быть пустым")
+    @Email(groups = {Create.class, Update.class}, message = "Email должен быть корректным")
     private String email;
 
-    @NotBlank(groups = {Create.class}, message = "Логин не может быть пустым")
-    @Pattern(regexp = "^\\S+$", groups = {Create.class, Update.class}, message = "Логин не может содержать пробелы")
+    @NotBlank(groups = {Create.class, Update.class}, message = "Логин не может быть пустым")
+    @Pattern(regexp = "^\\S+$", groups = {Create.class, Update.class},
+            message = "Логин не может содержать пробелы")
     private String login;
 
     private String name;
 
-    @PastOrPresent(groups = {Create.class, Update.class}, message = "Дата рождения не может быть в будущем")
-    @JsonFormat(pattern = "yyyy-MM-dd")
+    @NotNull(groups = {Create.class, Update.class}, message = "Дата рождения обязательна")
+    @PastOrPresent(groups = {Create.class, Update.class},
+            message = "Дата рождения не может быть в будущем")
     private LocalDate birthday;
 }
