@@ -60,9 +60,15 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(NotFoundException.class)
-    public ResponseEntity<String> handleNotFoundException(NotFoundException ex) {
+    public ResponseEntity<Map<String, String>> handleNotFoundException(NotFoundException ex) {
         log.warn("Ресурс не найден: {}", ex.getMessage());
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ex.getMessage());
+
+        Map<String, String> error = Map.of(
+                "error", "Not Found",
+                "message", ex.getMessage()
+        );
+
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
     }
 
     @ExceptionHandler(Exception.class)
