@@ -14,18 +14,18 @@ public class User {
     @Null(groups = Create.class, message = "Id должен отсутствовать")
     private Integer id;
 
-    @NotBlank(groups = {Create.class, Update.class}, message = "Email не может быть пустым")
+    @NotBlank(groups = Create.class, message = "Email не может быть пустым")
     @Email(groups = {Create.class, Update.class}, message = "Email должен быть корректным")
     private String email;
 
-    @NotBlank(groups = {Create.class, Update.class}, message = "Логин не может быть пустым")
+    @NotBlank(groups = Create.class, message = "Логин не может быть пустым")
     @Pattern(regexp = "^\\S+$", groups = {Create.class, Update.class},
             message = "Логин не может содержать пробелы")
     private String login;
 
     private String name;
 
-    @NotNull(groups = {Create.class, Update.class}, message = "Дата рождения обязательна")
+    @NotNull(groups = Create.class, message = "Дата рождения обязательна")
     @PastOrPresent(groups = {Create.class, Update.class},
             message = "Дата рождения не может быть в будущем")
     private LocalDate birthday;

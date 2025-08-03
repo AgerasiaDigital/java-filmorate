@@ -45,8 +45,23 @@ public class FilmController {
             throw new NotFoundException("Фильм с id = " + film.getId() + " не найден");
         }
 
-        films.put(film.getId(), film);
-        log.info("Фильм с ID {} обновлен", film.getId());
-        return film;
+        Film existingFilm = films.get(film.getId());
+
+        if (film.getName() != null) {
+            existingFilm.setName(film.getName());
+        }
+        if (film.getDescription() != null) {
+            existingFilm.setDescription(film.getDescription());
+        }
+        if (film.getReleaseDate() != null) {
+            existingFilm.setReleaseDate(film.getReleaseDate());
+        }
+        if (film.getDuration() != null) {
+            existingFilm.setDuration(film.getDuration());
+        }
+
+        films.put(existingFilm.getId(), existingFilm);
+        log.info("Фильм с ID {} обновлен", existingFilm.getId());
+        return existingFilm;
     }
 }
