@@ -15,18 +15,18 @@ public class Film {
     @Null(groups = Create.class, message = "Id должен отсутствовать")
     private Integer id;
 
-    @NotBlank(groups = {Create.class, Update.class}, message = "Название не может быть пустым")
+    @NotBlank(groups = Create.class, message = "Название не может быть пустым")
     private String name;
 
     @Size(max = 200, groups = {Create.class, Update.class},
             message = "Максимальная длина описания — 200 символов")
     private String description;
 
-    @NotNull(groups = {Create.class, Update.class}, message = "Дата релиза обязательна")
+    @NotNull(groups = Create.class, message = "Дата релиза обязательна")
     @ReleaseDateConstraint(groups = {Create.class, Update.class})
     private LocalDate releaseDate;
 
-    @NotNull(groups = {Create.class, Update.class}, message = "Продолжительность обязательна")
+    @NotNull(groups = Create.class, message = "Продолжительность обязательна")
     @Positive(groups = {Create.class, Update.class},
             message = "Продолжительность должна быть положительным числом")
     private Integer duration;
