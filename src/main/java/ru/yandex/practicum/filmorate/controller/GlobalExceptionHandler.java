@@ -5,6 +5,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
@@ -19,9 +20,8 @@ import java.util.stream.Collectors;
 public class GlobalExceptionHandler {
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<Map<String, String>> handleValidationExceptions(
-            MethodArgumentNotValidException ex) {
-
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public Map<String, String> handleValidationExceptions(MethodArgumentNotValidException ex) {
         log.warn("Ошибка валидации: {}", ex.getMessage());
 
         Map<String, String> errors = ex.getBindingResult()
@@ -33,13 +33,12 @@ public class GlobalExceptionHandler {
                         (existing, replacement) -> existing
                 ));
 
-        return ResponseEntity.badRequest().body(errors);
+        return errors;
     }
 
     @ExceptionHandler(ConstraintViolationException.class)
-    public ResponseEntity<Map<String, String>> handleConstraintViolationException(
-            ConstraintViolationException ex) {
-
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public Map<String, String> handleConstraintViolationException(ConstraintViolationException ex) {
         log.warn("Ошибка валидации ограничений: {}", ex.getMessage());
 
         Map<String, String> errors = ex.getConstraintViolations()
@@ -50,31 +49,30 @@ public class GlobalExceptionHandler {
                         (existing, replacement) -> existing
                 ));
 
-        return ResponseEntity.badRequest().body(errors);
+        return errors;
     }
 
     @ExceptionHandler(ValidationException.class)
-    public ResponseEntity<String> handleValidationException(ValidationException ex) {
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public Map<String, String> handleValidationException(ValidationException ex) {
         log.warn("Кастомная ошибка валидации: {}", ex.getMessage());
-        return ResponseEntity.badRequest().body(ex.getMessage());
+        return Map.of("error", ex.getMessage());
     }
 
     @ExceptionHandler(NotFoundException.class)
-    public ResponseEntity<Map<String, String>> handleNotFoundException(NotFoundException ex) {
+    @ResponseStatus(HttpStatus.NOT_FOUND)
+    public Map<String, String> handleNotFoundException(NotFoundException ex) {
         log.warn("Ресурс не найден: {}", ex.getMessage());
-
-        Map<String, String> error = Map.of(
+        return Map.of(
                 "error", "Not Found",
                 "message", ex.getMessage()
         );
-
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
     }
 
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<String> handleGenericException(Exception ex) {
+    @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
+    public Map<String, String> handleGenericException(Exception ex) {
         log.error("Неожиданная ошибка: ", ex);
-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body("Внутренняя ошибка сервера");
+        return Map.of("error", "Внутренняя ошибка сервера");
     }
 }
