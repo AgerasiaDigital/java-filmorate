@@ -6,10 +6,11 @@ import ru.yandex.practicum.filmorate.validation.Update;
 
 import jakarta.validation.constraints.*;
 import java.time.LocalDate;
+import java.util.HashSet;
+import java.util.Set;
 
 @Data
 public class User {
-
     @NotNull(groups = Update.class, message = "Id должен быть указан")
     @Null(groups = Create.class, message = "Id должен отсутствовать")
     private Integer id;
@@ -29,4 +30,6 @@ public class User {
     @PastOrPresent(groups = {Create.class, Update.class},
             message = "Дата рождения не может быть в будущем")
     private LocalDate birthday;
+
+    private Set<Integer> friends = new HashSet<>();
 }

@@ -8,10 +8,11 @@ import ru.yandex.practicum.filmorate.validation.Update;
 import jakarta.validation.constraints.*;
 
 import java.time.LocalDate;
+import java.util.HashSet;
+import java.util.Set;
 
 @Data
 public class Film {
-
     @NotNull(groups = Update.class, message = "Id должен быть указан")
     @Null(groups = Create.class, message = "Id должен отсутствовать")
     private Integer id;
@@ -31,4 +32,6 @@ public class Film {
     @Positive(groups = {Create.class, Update.class},
             message = "Продолжительность должна быть положительным числом")
     private Integer duration;
+
+    private Set<Integer> likes = new HashSet<>();
 }
