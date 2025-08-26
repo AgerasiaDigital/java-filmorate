@@ -6,6 +6,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import ru.yandex.practicum.filmorate.dto.ErrorResponse;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
 
@@ -24,16 +25,7 @@ public class GlobalExceptionHandler {
     public Map<String, String> handleValidationExceptions(MethodArgumentNotValidException ex) {
         log.warn("Ошибка валидации: {}", ex.getMessage());
 
-        Map<String, String> errors = ex.getBindingResult()
-                .getFieldErrors()
-                .stream()
-                .collect(Collectors.toMap(
-                        error -> error.getField(),
-                        error -> error.getDefaultMessage(),
-                        (existing, replacement) -> existing
-                ));
-
-        return errors;
+        return ex.getBindingResult().getFieldErrors().stream().collect(Collectors.toMap(error -> error.getField(), error -> error.getDefaultMessage(), (existing, replacement) -> existing));
     }
 
     @ExceptionHandler(ConstraintViolationException.class)
@@ -41,38 +33,27 @@ public class GlobalExceptionHandler {
     public Map<String, String> handleConstraintViolationException(ConstraintViolationException ex) {
         log.warn("Ошибка валидации ограничений: {}", ex.getMessage());
 
-        Map<String, String> errors = ex.getConstraintViolations()
-                .stream()
-                .collect(Collectors.toMap(
-                        violation -> violation.getPropertyPath().toString(),
-                        ConstraintViolation::getMessage,
-                        (existing, replacement) -> existing
-                ));
-
-        return errors;
+        return ex.getConstraintViolations().stream().collect(Collectors.toMap(violation -> violation.getPropertyPath().toString(), ConstraintViolation::getMessage, (existing, replacement) -> existing));
     }
 
     @ExceptionHandler(ValidationException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
-    public Map<String, String> handleValidationException(ValidationException ex) {
+    public ErrorResponse handleValidationException(ValidationException ex) {
         log.warn("Кастомная ошибка валидации: {}", ex.getMessage());
-        return Map.of("error", ex.getMessage());
+        return new ErrorResponse("Validation Error", ex.getMessage());
     }
 
     @ExceptionHandler(NotFoundException.class)
     @ResponseStatus(HttpStatus.NOT_FOUND)
-    public Map<String, String> handleNotFoundException(NotFoundException ex) {
+    public ErrorResponse handleNotFoundException(NotFoundException ex) {
         log.warn("Ресурс не найден: {}", ex.getMessage());
-        return Map.of(
-                "error", "Not Found",
-                "message", ex.getMessage()
-        );
+        return new ErrorResponse("Not Found", ex.getMessage());
     }
 
     @ExceptionHandler(Exception.class)
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
-    public Map<String, String> handleGenericException(Exception ex) {
+    public ErrorResponse handleGenericException(Exception ex) {
         log.error("Неожиданная ошибка: ", ex);
-        return Map.of("error", "Внутренняя ошибка сервера");
+        return new ErrorResponse("Internal Server Error", "Внутренняя ошибка сервера");
     }
 }
