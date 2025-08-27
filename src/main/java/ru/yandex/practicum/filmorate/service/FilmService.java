@@ -24,7 +24,8 @@ public class FilmService {
     }
 
     public Film updateFilm(Film film) {
-        Film existingFilm = filmStorage.findById(film.getId()).orElseThrow(() -> new NotFoundException("Фильм с id = " + film.getId() + " не найден"));
+        Film existingFilm = filmStorage.findById(film.getId())
+                .orElseThrow(() -> new NotFoundException("Фильм с id = " + film.getId() + " не найден"));
 
         if (film.getName() != null) {
             existingFilm.setName(film.getName());
@@ -43,7 +44,8 @@ public class FilmService {
     }
 
     public Film getFilmById(int id) {
-        return filmStorage.findById(id).orElseThrow(() -> new NotFoundException("Фильм с id = " + id + " не найден"));
+        return filmStorage.findById(id)
+                .orElseThrow(() -> new NotFoundException("Фильм с id = " + id + " не найден"));
     }
 
     public Collection<Film> getAllFilms() {
@@ -69,6 +71,9 @@ public class FilmService {
     }
 
     public List<Film> getPopularFilms(int count) {
-        return filmStorage.findAll().stream().sorted((f1, f2) -> Integer.compare(f2.getLikes().size(), f1.getLikes().size())).limit(count).collect(Collectors.toList());
+        return filmStorage.findAll().stream()
+                .sorted((f1, f2) -> Integer.compare(f2.getLikes().size(), f1.getLikes().size()))
+                .limit(count)
+                .collect(Collectors.toList());
     }
 }

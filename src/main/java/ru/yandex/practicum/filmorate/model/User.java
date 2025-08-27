@@ -5,7 +5,6 @@ import ru.yandex.practicum.filmorate.validation.Create;
 import ru.yandex.practicum.filmorate.validation.Update;
 
 import jakarta.validation.constraints.*;
-
 import java.time.LocalDate;
 import java.util.HashSet;
 import java.util.Set;
@@ -21,13 +20,15 @@ public class User {
     private String email;
 
     @NotBlank(groups = Create.class, message = "Логин не может быть пустым")
-    @Pattern(regexp = "^\\S+$", groups = {Create.class, Update.class}, message = "Логин не может содержать пробелы")
+    @Pattern(regexp = "^\\S+$", groups = {Create.class, Update.class},
+            message = "Логин не может содержать пробелы")
     private String login;
 
     private String name;
 
     @NotNull(groups = Create.class, message = "Дата рождения обязательна")
-    @PastOrPresent(groups = {Create.class, Update.class}, message = "Дата рождения не может быть в будущем")
+    @PastOrPresent(groups = {Create.class, Update.class},
+            message = "Дата рождения не может быть в будущем")
     private LocalDate birthday;
 
     private Set<Integer> friends = new HashSet<>();
@@ -38,11 +39,5 @@ public class User {
 
     public void removeFriend(Integer friendId) {
         friends.remove(friendId);
-    }
-
-    public Set<Integer> getCommonFriends(User other) {
-        Set<Integer> common = new HashSet<>(friends);
-        common.retainAll(other.getFriends());
-        return common;
     }
 }

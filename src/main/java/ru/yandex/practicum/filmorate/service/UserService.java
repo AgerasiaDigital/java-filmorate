@@ -4,12 +4,14 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
+import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.User;
 import ru.yandex.practicum.filmorate.storage.user.UserStorage;
-import ru.yandex.practicum.filmorate.exception.ValidationException;
 
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -24,7 +26,8 @@ public class UserService {
     }
 
     public User updateUser(User user) {
-        User existingUser = userStorage.findById(user.getId()).orElseThrow(() -> new NotFoundException("Пользователь с id = " + user.getId() + " не найден"));
+        User existingUser = userStorage.findById(user.getId())
+                .orElseThrow(() -> new NotFoundException("Пользователь с id = " + user.getId() + " не найден"));
 
         if (user.getEmail() != null) {
             existingUser.setEmail(user.getEmail());
@@ -47,7 +50,8 @@ public class UserService {
     }
 
     public User getUserById(int id) {
-        return userStorage.findById(id).orElseThrow(() -> new NotFoundException("Пользователь с id = " + id + " не найден"));
+        return userStorage.findById(id)
+                .orElseThrow(() -> new NotFoundException("Пользователь с id = " + id + " не найден"));
     }
 
     public Collection<User> getAllUsers() {
@@ -80,14 +84,21 @@ public class UserService {
 
     public List<User> getFriends(int userId) {
         User user = getUserById(userId);
-        return user.getFriends().stream().map(this::getUserById).collect(Collectors.toList());
+        return user.getFriends().stream()
+                .map(this::getUserById)
+                .collect(Collectors.toList());
     }
 
     public List<User> getCommonFriends(int userId, int otherId) {
         User user = getUserById(userId);
         User other = getUserById(otherId);
 
-        return user.getCommonFriends(other).stream().map(this::getUserById).collect(Collectors.toList());
+        Set<Integer> commonFriends = new HashSet<>(user.getFriends());
+        commonFriends.retainAll(other.getFriends());
+
+        return commonFriends.stream()
+                .map(this::getUserById)
+                .collect(Collectors.toList());
     }
 
     private void validateUserName(User user) {
