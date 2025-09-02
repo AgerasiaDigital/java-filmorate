@@ -39,6 +39,12 @@ public class FilmService {
         if (film.getDuration() != null) {
             existingFilm.setDuration(film.getDuration());
         }
+        if (film.getMpa() != null) {
+            existingFilm.setMpa(film.getMpa());
+        }
+        if (film.getGenres() != null && !film.getGenres().isEmpty()) {
+            existingFilm.setGenres(film.getGenres());
+        }
 
         return filmStorage.update(existingFilm);
     }

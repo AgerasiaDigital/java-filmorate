@@ -32,7 +32,6 @@ public class Film {
     @Positive(groups = {Create.class, Update.class}, message = "Продолжительность должна быть положительным числом")
     private Integer duration;
 
-    @NotNull(groups = Create.class, message = "Рейтинг MPA обязателен")
     private Mpa mpa;
 
     private Set<Genre> genres = new LinkedHashSet<>();
