@@ -9,6 +9,7 @@ import jakarta.validation.constraints.*;
 
 import java.time.LocalDate;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.Set;
 
 @Data
@@ -31,6 +32,11 @@ public class Film {
     @Positive(groups = {Create.class, Update.class}, message = "Продолжительность должна быть положительным числом")
     private Integer duration;
 
+    @NotNull(groups = Create.class, message = "Рейтинг MPA обязателен")
+    private Mpa mpa;
+
+    private Set<Genre> genres = new LinkedHashSet<>();
+
     private Set<Integer> likes = new HashSet<>();
 
     public void addLike(Integer userId) {
@@ -39,5 +45,13 @@ public class Film {
 
     public void removeLike(Integer userId) {
         likes.remove(userId);
+    }
+
+    public void addGenre(Genre genre) {
+        genres.add(genre);
+    }
+
+    public void removeGenre(Genre genre) {
+        genres.remove(genre);
     }
 }
