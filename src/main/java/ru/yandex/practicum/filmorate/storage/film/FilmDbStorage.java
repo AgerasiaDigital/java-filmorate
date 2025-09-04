@@ -92,7 +92,7 @@ public class FilmDbStorage implements FilmStorage {
 
         if (rowsUpdated == 0) {
             log.warn("Фильм с id = {} не найден при обновлении", film.getId());
-            throw new RuntimeException("Фильм с id = " + film.getId() + " не найден");
+            throw new ru.yandex.practicum.filmorate.exception.NotFoundException("Фильм с id = " + film.getId() + " не найден");
         }
 
         deleteFilmGenres(film.getId());

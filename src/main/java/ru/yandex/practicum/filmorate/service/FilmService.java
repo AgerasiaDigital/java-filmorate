@@ -35,6 +35,8 @@ public class FilmService {
     }
 
     public Film updateFilm(Film film) {
+        log.debug("Начало обновления фильма: {}", film);
+
         if (film.getId() == null) {
             throw new NotFoundException("ID фильма не указан");
         }
@@ -44,12 +46,13 @@ public class FilmService {
         try {
             existingFilm = filmStorage.findById(film.getId())
                     .orElseThrow(() -> new NotFoundException("Фильм с id = " + film.getId() + " не найден"));
+            log.debug("Найден существующий фильм: {}", existingFilm);
         } catch (NotFoundException e) {
             // Логируем и перебрасываем NotFoundException как есть
             log.warn("Попытка обновить несуществующий фильм с id: {}", film.getId());
             throw e;
         } catch (Exception e) {
-            log.error("Ошибка при поиске фильма {}: {}", film.getId(), e.getMessage());
+            log.error("Ошибка при поиске фильма {}: {}", film.getId(), e.getMessage(), e);
             throw new NotFoundException("Фильм с id = " + film.getId() + " не найден");
         }
 
@@ -67,27 +70,35 @@ public class FilmService {
         // Обновляем только переданные поля
         if (film.getName() != null && !film.getName().isBlank()) {
             updatedFilm.setName(film.getName());
+            log.debug("Обновляем название: {}", film.getName());
         }
         if (film.getDescription() != null) {
             updatedFilm.setDescription(film.getDescription());
+            log.debug("Обновляем описание: {}", film.getDescription());
         }
         if (film.getReleaseDate() != null) {
             updatedFilm.setReleaseDate(film.getReleaseDate());
+            log.debug("Обновляем дату релиза: {}", film.getReleaseDate());
         }
         if (film.getDuration() != null && film.getDuration() > 0) {
             updatedFilm.setDuration(film.getDuration());
+            log.debug("Обновляем продолжительность: {}", film.getDuration());
         }
         if (film.getMpa() != null) {
             updatedFilm.setMpa(film.getMpa());
+            log.debug("Обновляем MPA: {}", film.getMpa());
         }
         if (film.getGenres() != null) {
             updatedFilm.setGenres(film.getGenres());
+            log.debug("Обновляем жанры: {}", film.getGenres());
         }
 
         try {
-            return filmStorage.update(updatedFilm);
+            Film result = filmStorage.update(updatedFilm);
+            log.debug("Фильм успешно обновлен: {}", result);
+            return result;
         } catch (Exception e) {
-            log.error("Ошибка при обновлении фильма {}: {}", film.getId(), e.getMessage());
+            log.error("Ошибка при обновлении фильма {}: {}", film.getId(), e.getMessage(), e);
             throw new RuntimeException("Не удалось обновить фильм", e);
         }
     }
@@ -102,13 +113,11 @@ public class FilmService {
     }
 
     public void addLike(int filmId, int userId) {
-        // Проверяем существование фильма и пользователя
         Film film = getFilmById(filmId);
         if (userStorage.findById(userId).isEmpty()) {
             throw new NotFoundException("Пользователь с id = " + userId + " не найден");
         }
 
-        // Добавляем лайк в БД (используем MERGE для H2)
         String sql = "MERGE INTO film_likes (film_id, user_id) KEY(film_id, user_id) VALUES (?, ?)";
         jdbcTemplate.update(sql, filmId, userId);
 
@@ -116,7 +125,6 @@ public class FilmService {
     }
 
     public void removeLike(int filmId, int userId) {
-        // Проверяем существование фильма и пользователя
         Film film = getFilmById(filmId);
         if (userStorage.findById(userId).isEmpty()) {
             throw new NotFoundException("Пользователь с id = " + userId + " не найден");
@@ -146,7 +154,6 @@ public class FilmService {
                     film.setReleaseDate(rs.getDate("release_date").toLocalDate());
                     film.setDuration(rs.getInt("duration"));
 
-                    // Устанавливаем MPA если есть
                     Integer mpaId = rs.getInt("mpa_id");
                     if (mpaId != 0) {
                         ru.yandex.practicum.filmorate.model.Mpa mpa = new ru.yandex.practicum.filmorate.model.Mpa();
@@ -158,7 +165,6 @@ public class FilmService {
                     return film;
                 }, count).stream()
                 .map(film -> {
-                    // Обогащаем фильм полной информацией
                     return filmStorage.findById(film.getId()).orElse(film);
                 })
                 .collect(Collectors.toList());
