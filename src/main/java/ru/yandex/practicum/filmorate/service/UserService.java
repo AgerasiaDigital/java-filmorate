@@ -85,13 +85,28 @@ public class UserService {
             throw new ValidationException("Нельзя добавить себя в друзья");
         }
 
+        // Проверяем существование пользователей
         getUserById(userId);
         getUserById(friendId);
 
-        String sql = "MERGE INTO friendships (user_id, friend_id, confirmed) KEY(user_id, friend_id) VALUES (?, ?, false)";
-        jdbcTemplate.update(sql, userId, friendId);
+        String checkSql = "SELECT COUNT(*) FROM friendships WHERE user_id = ? AND friend_id = ?";
+        int existingFriendship = jdbcTemplate.queryForObject(checkSql, Integer.class, friendId, userId);
 
-        log.info("Пользователь {} отправил заявку в друзья пользователю {}", userId, friendId);
+        if (existingFriendship > 0) {
+            String updateSql = "UPDATE friendships SET confirmed = true WHERE user_id = ? AND friend_id = ?";
+            jdbcTemplate.update(updateSql, friendId, userId);
+
+            String addSql = "MERGE INTO friendships (user_id, friend_id, confirmed) KEY(user_id, friend_id) VALUES (?, ?, true)";
+            jdbcTemplate.update(addSql, userId, friendId);
+
+            log.info("Пользователи {} и {} теперь друзья (взаимная дружба)", userId, friendId);
+        } else {
+            // Добавляем неподтвержденную дружбу (заявку)
+            String addSql = "MERGE INTO friendships (user_id, friend_id, confirmed) KEY(user_id, friend_id) VALUES (?, ?, false)";
+            jdbcTemplate.update(addSql, userId, friendId);
+
+            log.info("Пользователь {} отправил заявку в друзья пользователю {}", userId, friendId);
+        }
     }
 
     public void removeFriend(int userId, int friendId) {
@@ -107,6 +122,7 @@ public class UserService {
     public List<User> getFriends(int userId) {
         getUserById(userId);
 
+        // Получаем всех друзей (и подтвержденных, и неподтвержденных заявок)
         String sql = "SELECT u.* FROM users u " +
                 "JOIN friendships f ON u.id = f.friend_id " +
                 "WHERE f.user_id = ? " +
@@ -116,7 +132,6 @@ public class UserService {
     }
 
     public List<User> getCommonFriends(int userId, int otherId) {
-        // Проверяем существование пользователей
         getUserById(userId);
         getUserById(otherId);
 
