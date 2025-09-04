@@ -38,26 +38,35 @@ public class FilmService {
         Film existingFilm = filmStorage.findById(film.getId())
                 .orElseThrow(() -> new NotFoundException("Фильм с id = " + film.getId() + " не найден"));
 
+        Film updatedFilm = new Film();
+        updatedFilm.setId(existingFilm.getId());
+        updatedFilm.setName(existingFilm.getName());
+        updatedFilm.setDescription(existingFilm.getDescription());
+        updatedFilm.setReleaseDate(existingFilm.getReleaseDate());
+        updatedFilm.setDuration(existingFilm.getDuration());
+        updatedFilm.setMpa(existingFilm.getMpa());
+        updatedFilm.setGenres(existingFilm.getGenres());
+
         if (film.getName() != null) {
-            existingFilm.setName(film.getName());
+            updatedFilm.setName(film.getName());
         }
         if (film.getDescription() != null) {
-            existingFilm.setDescription(film.getDescription());
+            updatedFilm.setDescription(film.getDescription());
         }
         if (film.getReleaseDate() != null) {
-            existingFilm.setReleaseDate(film.getReleaseDate());
+            updatedFilm.setReleaseDate(film.getReleaseDate());
         }
         if (film.getDuration() != null) {
-            existingFilm.setDuration(film.getDuration());
+            updatedFilm.setDuration(film.getDuration());
         }
         if (film.getMpa() != null) {
-            existingFilm.setMpa(film.getMpa());
+            updatedFilm.setMpa(film.getMpa());
         }
-        if (film.getGenres() != null && !film.getGenres().isEmpty()) {
-            existingFilm.setGenres(film.getGenres());
+        if (film.getGenres() != null) {
+            updatedFilm.setGenres(film.getGenres());
         }
 
-        return filmStorage.update(existingFilm);
+        return filmStorage.update(updatedFilm);
     }
 
     public Film getFilmById(int id) {
@@ -75,6 +84,7 @@ public class FilmService {
             throw new NotFoundException("Пользователь с id = " + userId + " не найден");
         }
 
+        // Добавляем лайк в БД (используем MERGE для H2)
         String sql = "MERGE INTO film_likes (film_id, user_id) KEY(film_id, user_id) VALUES (?, ?)";
         jdbcTemplate.update(sql, filmId, userId);
 
@@ -110,7 +120,6 @@ public class FilmService {
                     film.setReleaseDate(rs.getDate("release_date").toLocalDate());
                     film.setDuration(rs.getInt("duration"));
 
-                    // Устанавливаем MPA если есть
                     Integer mpaId = rs.getInt("mpa_id");
                     if (mpaId != 0) {
                         ru.yandex.practicum.filmorate.model.Mpa mpa = new ru.yandex.practicum.filmorate.model.Mpa();

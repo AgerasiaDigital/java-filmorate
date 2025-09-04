@@ -85,7 +85,6 @@ public class UserService {
             throw new ValidationException("Нельзя добавить себя в друзья");
         }
 
-        // Проверяем существование пользователей
         getUserById(userId);
         getUserById(friendId);
 
@@ -101,7 +100,6 @@ public class UserService {
 
             log.info("Пользователи {} и {} теперь друзья (взаимная дружба)", userId, friendId);
         } else {
-            // Добавляем неподтвержденную дружбу (заявку)
             String addSql = "MERGE INTO friendships (user_id, friend_id, confirmed) KEY(user_id, friend_id) VALUES (?, ?, false)";
             jdbcTemplate.update(addSql, userId, friendId);
 
@@ -113,16 +111,19 @@ public class UserService {
         getUserById(userId);
         getUserById(friendId);
 
-        String sql = "DELETE FROM friendships WHERE (user_id = ? AND friend_id = ?) OR (user_id = ? AND friend_id = ?)";
-        jdbcTemplate.update(sql, userId, friendId, friendId, userId);
+        String sql = "DELETE FROM friendships WHERE user_id = ? AND friend_id = ?";
+        int deleted = jdbcTemplate.update(sql, userId, friendId);
 
-        log.info("Дружба между пользователями {} и {} удалена", userId, friendId);
+        if (deleted == 0) {
+            log.warn("Дружба от пользователя {} к {} не найдена", userId, friendId);
+        } else {
+            log.info("Пользователь {} удалил из друзей пользователя {}", userId, friendId);
+        }
     }
 
     public List<User> getFriends(int userId) {
         getUserById(userId);
 
-        // Получаем всех друзей (и подтвержденных, и неподтвержденных заявок)
         String sql = "SELECT u.* FROM users u " +
                 "JOIN friendships f ON u.id = f.friend_id " +
                 "WHERE f.user_id = ? " +
