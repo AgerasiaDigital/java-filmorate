@@ -116,11 +116,11 @@ public class FilmDbStorage implements FilmStorage {
     @Override
     public Optional<Film> findById(int id) {
         String sql = """
-            SELECT f.*, m.name as mpa_name 
-            FROM films f 
-            LEFT JOIN mpa m ON f.mpa_id = m.id 
-            WHERE f.id = ?
-            """;
+                SELECT f.*, m.name as mpa_name 
+                FROM films f 
+                LEFT JOIN mpa m ON f.mpa_id = m.id 
+                WHERE f.id = ?
+                """;
         try {
             Film film = jdbcTemplate.queryForObject(sql, filmRowMapper, id);
             if (film != null) {
@@ -135,11 +135,11 @@ public class FilmDbStorage implements FilmStorage {
     @Override
     public Collection<Film> findAll() {
         String sql = """
-            SELECT f.*, m.name as mpa_name 
-            FROM films f 
-            LEFT JOIN mpa m ON f.mpa_id = m.id 
-            ORDER BY f.id
-            """;
+                SELECT f.*, m.name as mpa_name 
+                FROM films f 
+                LEFT JOIN mpa m ON f.mpa_id = m.id 
+                ORDER BY f.id
+                """;
         List<Film> films = jdbcTemplate.query(sql, filmRowMapper);
 
         // Обогащаем каждый фильм деталями
@@ -160,12 +160,12 @@ public class FilmDbStorage implements FilmStorage {
 
     private Set<Genre> loadFilmGenres(int filmId) {
         String sql = """
-            SELECT g.id, g.name 
-            FROM genres g 
-            JOIN film_genres fg ON g.id = fg.genre_id 
-            WHERE fg.film_id = ? 
-            ORDER BY g.id
-            """;
+                SELECT g.id, g.name 
+                FROM genres g 
+                JOIN film_genres fg ON g.id = fg.genre_id 
+                WHERE fg.film_id = ? 
+                ORDER BY g.id
+                """;
 
         List<Genre> genres = jdbcTemplate.query(sql, (rs, rowNum) -> {
             Genre genre = new Genre();

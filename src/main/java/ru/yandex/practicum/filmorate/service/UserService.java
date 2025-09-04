@@ -105,7 +105,6 @@ public class UserService {
     }
 
     public List<User> getFriends(int userId) {
-        // Проверяем существование пользователя
         getUserById(userId);
 
         String sql = "SELECT u.* FROM users u " +
