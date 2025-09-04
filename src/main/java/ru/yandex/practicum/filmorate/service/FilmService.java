@@ -35,9 +35,14 @@ public class FilmService {
     }
 
     public Film updateFilm(Film film) {
+        if (film.getId() == null) {
+            throw new NotFoundException("ID фильма не указан");
+        }
+
         Film existingFilm = filmStorage.findById(film.getId())
                 .orElseThrow(() -> new NotFoundException("Фильм с id = " + film.getId() + " не найден"));
 
+        // Копируем все поля из существующего фильма
         Film updatedFilm = new Film();
         updatedFilm.setId(existingFilm.getId());
         updatedFilm.setName(existingFilm.getName());
@@ -46,8 +51,10 @@ public class FilmService {
         updatedFilm.setDuration(existingFilm.getDuration());
         updatedFilm.setMpa(existingFilm.getMpa());
         updatedFilm.setGenres(existingFilm.getGenres());
+        updatedFilm.setLikes(existingFilm.getLikes());
 
-        if (film.getName() != null) {
+        // Обновляем только те поля, которые пришли в запросе
+        if (film.getName() != null && !film.getName().isBlank()) {
             updatedFilm.setName(film.getName());
         }
         if (film.getDescription() != null) {
@@ -56,7 +63,7 @@ public class FilmService {
         if (film.getReleaseDate() != null) {
             updatedFilm.setReleaseDate(film.getReleaseDate());
         }
-        if (film.getDuration() != null) {
+        if (film.getDuration() != null && film.getDuration() > 0) {
             updatedFilm.setDuration(film.getDuration());
         }
         if (film.getMpa() != null) {
@@ -66,7 +73,12 @@ public class FilmService {
             updatedFilm.setGenres(film.getGenres());
         }
 
-        return filmStorage.update(updatedFilm);
+        try {
+            return filmStorage.update(updatedFilm);
+        } catch (Exception e) {
+            log.error("Ошибка при обновлении фильма {}: {}", film.getId(), e.getMessage(), e);
+            throw new RuntimeException("Не удалось обновить фильм", e);
+        }
     }
 
     public Film getFilmById(int id) {
@@ -79,6 +91,7 @@ public class FilmService {
     }
 
     public void addLike(int filmId, int userId) {
+        // Проверяем существование фильма и пользователя
         Film film = getFilmById(filmId);
         if (userStorage.findById(userId).isEmpty()) {
             throw new NotFoundException("Пользователь с id = " + userId + " не найден");
