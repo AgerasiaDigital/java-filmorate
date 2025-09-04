@@ -40,16 +40,15 @@ public class FilmControllerTest {
         film.setReleaseDate(LocalDate.of(2000, 1, 1));
         film.setDuration(120);
 
-        // Добавляем MPA рейтинг
         Mpa mpa = new Mpa();
-        mpa.setId(1); // G рейтинг из data.sql
+        mpa.setId(1);
         film.setMpa(mpa);
 
         mockMvc.perform(post("/films")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(film)))
                 .andExpect(status().isOk())
-                .andExpected(jsonPath("$.id").exists())
+                .andExpect(jsonPath("$.id").exists())
                 .andExpect(jsonPath("$.name").value("Test Film"));
     }
 
