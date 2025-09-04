@@ -36,7 +36,6 @@ public class FilmDbStorage implements FilmStorage {
             film.setReleaseDate(rs.getDate("release_date").toLocalDate());
             film.setDuration(rs.getInt("duration"));
 
-            // Устанавливаем MPA если есть
             Integer mpaId = rs.getInt("mpa_id");
             if (mpaId != 0) {
                 Mpa mpa = new Mpa();
@@ -71,7 +70,6 @@ public class FilmDbStorage implements FilmStorage {
 
         film.setId(keyHolder.getKey().intValue());
 
-        // Сохраняем жанры фильма
         if (film.getGenres() != null && !film.getGenres().isEmpty()) {
             saveFilmGenres(film.getId(), film.getGenres());
         }
@@ -96,7 +94,6 @@ public class FilmDbStorage implements FilmStorage {
             throw new RuntimeException("Фильм с id = " + film.getId() + " не найден");
         }
 
-        // Обновляем жанры фильма
         deleteFilmGenres(film.getId());
         if (film.getGenres() != null && !film.getGenres().isEmpty()) {
             saveFilmGenres(film.getId(), film.getGenres());
@@ -115,12 +112,7 @@ public class FilmDbStorage implements FilmStorage {
 
     @Override
     public Optional<Film> findById(int id) {
-        String sql = """
-                SELECT f.*, m.name as mpa_name 
-                FROM films f 
-                LEFT JOIN mpa m ON f.mpa_id = m.id 
-                WHERE f.id = ?
-                """;
+        String sql = "SELECT f.*, m.name as mpa_name FROM films f LEFT JOIN mpa m ON f.mpa_id = m.id WHERE f.id = ?";
         try {
             Film film = jdbcTemplate.queryForObject(sql, filmRowMapper, id);
             if (film != null) {
@@ -134,15 +126,9 @@ public class FilmDbStorage implements FilmStorage {
 
     @Override
     public Collection<Film> findAll() {
-        String sql = """
-                SELECT f.*, m.name as mpa_name 
-                FROM films f 
-                LEFT JOIN mpa m ON f.mpa_id = m.id 
-                ORDER BY f.id
-                """;
+        String sql = "SELECT f.*, m.name as mpa_name FROM films f LEFT JOIN mpa m ON f.mpa_id = m.id ORDER BY f.id";
         List<Film> films = jdbcTemplate.query(sql, filmRowMapper);
 
-        // Обогащаем каждый фильм деталями
         for (Film film : films) {
             enrichFilmWithDetails(film);
         }
@@ -151,21 +137,13 @@ public class FilmDbStorage implements FilmStorage {
     }
 
     private Film enrichFilmWithDetails(Film film) {
-        // Загружаем жанры
         film.setGenres(loadFilmGenres(film.getId()));
-        // Загружаем лайки
         film.setLikes(loadFilmLikes(film.getId()));
         return film;
     }
 
     private Set<Genre> loadFilmGenres(int filmId) {
-        String sql = """
-                SELECT g.id, g.name 
-                FROM genres g 
-                JOIN film_genres fg ON g.id = fg.genre_id 
-                WHERE fg.film_id = ? 
-                ORDER BY g.id
-                """;
+        String sql = "SELECT g.id, g.name FROM genres g JOIN film_genres fg ON g.id = fg.genre_id WHERE fg.film_id = ? ORDER BY g.id";
 
         List<Genre> genres = jdbcTemplate.query(sql, (rs, rowNum) -> {
             Genre genre = new Genre();
