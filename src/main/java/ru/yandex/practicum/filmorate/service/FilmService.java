@@ -39,10 +39,21 @@ public class FilmService {
             throw new NotFoundException("ID фильма не указан");
         }
 
-        Film existingFilm = filmStorage.findById(film.getId())
-                .orElseThrow(() -> new NotFoundException("Фильм с id = " + film.getId() + " не найден"));
+        // Проверяем существование фильма ДО любых операций
+        Film existingFilm;
+        try {
+            existingFilm = filmStorage.findById(film.getId())
+                    .orElseThrow(() -> new NotFoundException("Фильм с id = " + film.getId() + " не найден"));
+        } catch (NotFoundException e) {
+            // Логируем и перебрасываем NotFoundException как есть
+            log.warn("Попытка обновить несуществующий фильм с id: {}", film.getId());
+            throw e;
+        } catch (Exception e) {
+            log.error("Ошибка при поиске фильма {}: {}", film.getId(), e.getMessage());
+            throw new NotFoundException("Фильм с id = " + film.getId() + " не найден");
+        }
 
-        // Копируем все поля из существующего фильма
+        // Создаем обновленную копию фильма
         Film updatedFilm = new Film();
         updatedFilm.setId(existingFilm.getId());
         updatedFilm.setName(existingFilm.getName());
@@ -53,7 +64,7 @@ public class FilmService {
         updatedFilm.setGenres(existingFilm.getGenres());
         updatedFilm.setLikes(existingFilm.getLikes());
 
-        // Обновляем только те поля, которые пришли в запросе
+        // Обновляем только переданные поля
         if (film.getName() != null && !film.getName().isBlank()) {
             updatedFilm.setName(film.getName());
         }
@@ -76,7 +87,7 @@ public class FilmService {
         try {
             return filmStorage.update(updatedFilm);
         } catch (Exception e) {
-            log.error("Ошибка при обновлении фильма {}: {}", film.getId(), e.getMessage(), e);
+            log.error("Ошибка при обновлении фильма {}: {}", film.getId(), e.getMessage());
             throw new RuntimeException("Не удалось обновить фильм", e);
         }
     }
@@ -105,11 +116,13 @@ public class FilmService {
     }
 
     public void removeLike(int filmId, int userId) {
+        // Проверяем существование фильма и пользователя
         Film film = getFilmById(filmId);
         if (userStorage.findById(userId).isEmpty()) {
             throw new NotFoundException("Пользователь с id = " + userId + " не найден");
         }
 
+        // Удаляем лайк из БД
         String sql = "DELETE FROM film_likes WHERE film_id = ? AND user_id = ?";
         jdbcTemplate.update(sql, filmId, userId);
 
@@ -133,6 +146,7 @@ public class FilmService {
                     film.setReleaseDate(rs.getDate("release_date").toLocalDate());
                     film.setDuration(rs.getInt("duration"));
 
+                    // Устанавливаем MPA если есть
                     Integer mpaId = rs.getInt("mpa_id");
                     if (mpaId != 0) {
                         ru.yandex.practicum.filmorate.model.Mpa mpa = new ru.yandex.practicum.filmorate.model.Mpa();
@@ -144,6 +158,7 @@ public class FilmService {
                     return film;
                 }, count).stream()
                 .map(film -> {
+                    // Обогащаем фильм полной информацией
                     return filmStorage.findById(film.getId()).orElse(film);
                 })
                 .collect(Collectors.toList());

@@ -91,6 +91,7 @@ public class FilmDbStorage implements FilmStorage {
                 film.getId());
 
         if (rowsUpdated == 0) {
+            log.warn("Фильм с id = {} не найден при обновлении", film.getId());
             throw new RuntimeException("Фильм с id = " + film.getId() + " не найден");
         }
 

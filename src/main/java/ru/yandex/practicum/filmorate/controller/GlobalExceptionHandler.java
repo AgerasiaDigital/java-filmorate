@@ -11,7 +11,6 @@ import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
 
 import jakarta.validation.ConstraintViolationException;
-
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -57,6 +56,13 @@ public class GlobalExceptionHandler {
     public ErrorResponse handleNotFoundException(NotFoundException ex) {
         log.warn("Ресурс не найден: {}", ex.getMessage());
         return new ErrorResponse("Not Found", ex.getMessage());
+    }
+
+    @ExceptionHandler(RuntimeException.class)
+    @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
+    public ErrorResponse handleRuntimeException(RuntimeException ex) {
+        log.error("Runtime ошибка: {}", ex.getMessage(), ex);
+        return new ErrorResponse("Internal Server Error", "Внутренняя ошибка сервера");
     }
 
     @ExceptionHandler(Exception.class)
