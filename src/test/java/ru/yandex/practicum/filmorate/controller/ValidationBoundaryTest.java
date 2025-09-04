@@ -7,8 +7,10 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.annotation.DirtiesContext;
+import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 import ru.yandex.practicum.filmorate.model.Film;
+import ru.yandex.practicum.filmorate.model.Mpa;
 import ru.yandex.practicum.filmorate.model.User;
 
 import java.time.LocalDate;
@@ -18,6 +20,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @SpringBootTest
 @AutoConfigureMockMvc
+@TestPropertySource(properties = {
+        "spring.datasource.url=jdbc:h2:mem:testdb",
+        "spring.sql.init.mode=always"
+})
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 public class ValidationBoundaryTest {
 
@@ -35,6 +41,10 @@ public class ValidationBoundaryTest {
         film.setReleaseDate(LocalDate.of(2000, 1, 1));
         film.setDuration(120);
 
+        Mpa mpa = new Mpa();
+        mpa.setId(1);
+        film.setMpa(mpa);
+
         mockMvc.perform(post("/films")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(film)))
@@ -48,6 +58,10 @@ public class ValidationBoundaryTest {
         film.setDescription("x".repeat(201));
         film.setReleaseDate(LocalDate.of(2000, 1, 1));
         film.setDuration(120);
+
+        Mpa mpa = new Mpa();
+        mpa.setId(1);
+        film.setMpa(mpa);
 
         mockMvc.perform(post("/films")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -63,6 +77,10 @@ public class ValidationBoundaryTest {
         film.setReleaseDate(LocalDate.of(2000, 1, 1));
         film.setDuration(120);
 
+        Mpa mpa = new Mpa();
+        mpa.setId(1);
+        film.setMpa(mpa);
+
         mockMvc.perform(post("/films")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(film)))
@@ -76,6 +94,10 @@ public class ValidationBoundaryTest {
         film.setDescription("Description");
         film.setReleaseDate(LocalDate.of(1895, 12, 27));
         film.setDuration(120);
+
+        Mpa mpa = new Mpa();
+        mpa.setId(1);
+        film.setMpa(mpa);
 
         mockMvc.perform(post("/films")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -91,6 +113,10 @@ public class ValidationBoundaryTest {
         film.setReleaseDate(LocalDate.of(1895, 12, 28));
         film.setDuration(120);
 
+        Mpa mpa = new Mpa();
+        mpa.setId(1);
+        film.setMpa(mpa);
+
         mockMvc.perform(post("/films")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(film)))
@@ -105,6 +131,10 @@ public class ValidationBoundaryTest {
         film.setReleaseDate(LocalDate.of(2000, 1, 1));
         film.setDuration(-1);
 
+        Mpa mpa = new Mpa();
+        mpa.setId(1);
+        film.setMpa(mpa);
+
         mockMvc.perform(post("/films")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(film)))
@@ -118,6 +148,10 @@ public class ValidationBoundaryTest {
         film.setDescription("Description");
         film.setReleaseDate(LocalDate.of(2000, 1, 1));
         film.setDuration(0);
+
+        Mpa mpa = new Mpa();
+        mpa.setId(1);
+        film.setMpa(mpa);
 
         mockMvc.perform(post("/films")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -184,6 +218,10 @@ public class ValidationBoundaryTest {
         createFilm.setDescription("Original description");
         createFilm.setReleaseDate(LocalDate.of(2000, 1, 1));
         createFilm.setDuration(120);
+
+        Mpa mpa = new Mpa();
+        mpa.setId(1);
+        createFilm.setMpa(mpa);
 
         String createResponse = mockMvc.perform(post("/films")
                         .contentType(MediaType.APPLICATION_JSON)

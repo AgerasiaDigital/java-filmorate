@@ -7,6 +7,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.annotation.DirtiesContext;
+import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 import ru.yandex.practicum.filmorate.model.User;
 
@@ -17,6 +18,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @SpringBootTest
 @AutoConfigureMockMvc
+@TestPropertySource(properties = {
+        "spring.datasource.url=jdbc:h2:mem:testdb",
+        "spring.sql.init.mode=always"
+})
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 public class UserControllerTest {
 
@@ -38,7 +43,8 @@ public class UserControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(user)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").value(1));
+                .andExpect(jsonPath("$.id").exists())
+                .andExpect(jsonPath("$.email").value("test@example.com"));
     }
 
     @Test
@@ -54,13 +60,16 @@ public class UserControllerTest {
         user.setLogin("testuser");
         user.setBirthday(LocalDate.of(1990, 1, 1));
 
-        mockMvc.perform(post("/users")
+        String response = mockMvc.perform(post("/users")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(user)))
-                .andExpect(status().isOk());
-
-        mockMvc.perform(get("/users/1"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").value(1));
+                .andReturn().getResponse().getContentAsString();
+
+        User createdUser = objectMapper.readValue(response, User.class);
+
+        mockMvc.perform(get("/users/" + createdUser.getId()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(createdUser.getId()));
     }
 }
