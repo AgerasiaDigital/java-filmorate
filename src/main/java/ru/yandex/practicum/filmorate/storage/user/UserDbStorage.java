@@ -9,6 +9,7 @@ import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.support.GeneratedKeyHolder;
 import org.springframework.jdbc.support.KeyHolder;
 import org.springframework.stereotype.Repository;
+import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.model.User;
 
 import java.sql.Date;
@@ -51,7 +52,7 @@ public class UserDbStorage implements UserStorage {
 
     @Override
     public User update(User user) {
-        User existingUser = getExistingUser(user.getId());
+        User existingUser = loadExistingUser(user.getId());
 
         if (user.getEmail() == null) {
             user.setEmail(existingUser.getEmail());
@@ -73,16 +74,16 @@ public class UserDbStorage implements UserStorage {
         return user;
     }
 
-    private User getExistingUser(int id) {
+    private User loadExistingUser(int id) {
         String sql = "SELECT id, email, login, name, birthday FROM users WHERE id = ?";
         try {
             User user = jdbcTemplate.queryForObject(sql, new UserRowMapper(), id);
             if (user == null) {
-                throw new RuntimeException("Пользователь с id = " + id + " не найден");
+                throw new NotFoundException("Пользователь с id = " + id + " не найден");
             }
             return user;
         } catch (DataAccessException e) {
-            throw new RuntimeException("Пользователь с id = " + id + " не найден");
+            throw new NotFoundException("Пользователь с id = " + id + " не найден");
         }
     }
 
