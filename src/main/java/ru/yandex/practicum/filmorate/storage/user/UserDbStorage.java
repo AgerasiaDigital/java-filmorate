@@ -14,8 +14,7 @@ import java.sql.Date;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.Collection;
-import java.util.Optional;
+import java.util.*;
 
 @Slf4j
 @Component
@@ -99,5 +98,44 @@ public class UserDbStorage implements UserStorage {
     public Collection<User> findAll() {
         String sql = "SELECT * FROM users ORDER BY id";
         return jdbcTemplate.query(sql, userRowMapper);
+    }
+
+    @Override
+    public void addFriend(int userId, int friendId) {
+        // Добавляем дружбу в обе стороны для соответствия тестам
+        String addSql = "MERGE INTO friendships (user_id, friend_id, confirmed) KEY(user_id, friend_id) VALUES (?, ?, true)";
+        jdbcTemplate.update(addSql, userId, friendId);
+        jdbcTemplate.update(addSql, friendId, userId);
+    }
+
+    @Override
+    public void removeFriend(int userId, int friendId) {
+        // Удаляем дружбу в обе стороны
+        String sql = "DELETE FROM friendships WHERE (user_id = ? AND friend_id = ?) OR (user_id = ? AND friend_id = ?)";
+        jdbcTemplate.update(sql, userId, friendId, friendId, userId);
+    }
+
+    @Override
+    public List<User> getFriends(int userId) {
+        String sql = "SELECT u.* FROM users u " +
+                "JOIN friendships f ON u.id = f.friend_id " +
+                "WHERE f.user_id = ? " +
+                "ORDER BY u.id";
+
+        return jdbcTemplate.query(sql, userRowMapper, userId);
+    }
+
+    @Override
+    public List<User> getCommonFriends(int userId, int otherId) {
+        String sql = "SELECT u.* FROM users u " +
+                "WHERE u.id IN ( " +
+                "    SELECT f1.friend_id " +
+                "    FROM friendships f1 " +
+                "    JOIN friendships f2 ON f1.friend_id = f2.friend_id " +
+                "    WHERE f1.user_id = ? AND f2.user_id = ? " +
+                ") " +
+                "ORDER BY u.id";
+
+        return jdbcTemplate.query(sql, userRowMapper, userId, otherId);
     }
 }

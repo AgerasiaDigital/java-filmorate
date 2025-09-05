@@ -5,6 +5,7 @@ import org.springframework.stereotype.Component;
 import ru.yandex.practicum.filmorate.model.User;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Component
@@ -41,5 +42,56 @@ public class InMemoryUserStorage implements UserStorage {
     @Override
     public Collection<User> findAll() {
         return new ArrayList<>(users.values());
+    }
+
+    @Override
+    public void addFriend(int userId, int friendId) {
+        User user = users.get(userId);
+        User friend = users.get(friendId);
+        if (user != null && friend != null) {
+            user.addFriend(friendId);
+            friend.addFriend(userId);
+        }
+    }
+
+    @Override
+    public void removeFriend(int userId, int friendId) {
+        User user = users.get(userId);
+        User friend = users.get(friendId);
+        if (user != null && friend != null) {
+            user.removeFriend(friendId);
+            friend.removeFriend(userId);
+        }
+    }
+
+    @Override
+    public List<User> getFriends(int userId) {
+        User user = users.get(userId);
+        if (user == null) {
+            return new ArrayList<>();
+        }
+
+        return user.getFriends().stream()
+                .map(users::get)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<User> getCommonFriends(int userId, int otherId) {
+        User user = users.get(userId);
+        User other = users.get(otherId);
+
+        if (user == null || other == null) {
+            return new ArrayList<>();
+        }
+
+        Set<Integer> commonFriends = new HashSet<>(user.getFriends());
+        commonFriends.retainAll(other.getFriends());
+
+        return commonFriends.stream()
+                .map(users::get)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList());
     }
 }
