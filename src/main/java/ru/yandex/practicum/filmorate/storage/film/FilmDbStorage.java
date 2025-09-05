@@ -131,6 +131,7 @@ public class FilmDbStorage implements FilmStorage {
         String sql = "SELECT f.*, m.name as mpa_name FROM films f LEFT JOIN mpa m ON f.mpa_id = m.id ORDER BY f.id";
         List<Film> films = jdbcTemplate.query(sql, filmRowMapper);
 
+        // Оптимизированная загрузка жанров и лайков для всех фильмов сразу
         if (!films.isEmpty()) {
             enrichFilmsWithDetailsBatch(films);
         }
@@ -170,9 +171,25 @@ public class FilmDbStorage implements FilmStorage {
     }
 
     private Film enrichFilmWithDetails(Film film) {
+        if (film.getMpa() != null && film.getMpa().getName() == null) {
+            loadMpaName(film);
+        }
+
         film.setGenres(loadFilmGenres(film.getId()));
         film.setLikes(loadFilmLikes(film.getId()));
         return film;
+    }
+
+    private void loadMpaName(Film film) {
+        if (film.getMpa() != null) {
+            String sql = "SELECT name FROM mpa WHERE id = ?";
+            try {
+                String mpaName = jdbcTemplate.queryForObject(sql, String.class, film.getMpa().getId());
+                film.getMpa().setName(mpaName);
+            } catch (Exception e) {
+                log.warn("Не удалось загрузить имя MPA для id: {}", film.getMpa().getId());
+            }
+        }
     }
 
     private void enrichFilmsWithDetailsBatch(List<Film> films) {
@@ -251,7 +268,6 @@ public class FilmDbStorage implements FilmStorage {
         return new HashSet<>(likes);
     }
 
-    // Batch операция для сохранения жанров
     private void saveFilmGenresBatch(int filmId, Set<Genre> genres) {
         String sql = "INSERT INTO film_genres (film_id, genre_id) VALUES (?, ?)";
 

@@ -110,9 +110,9 @@ public class UserDbStorage implements UserStorage {
 
     @Override
     public void removeFriend(int userId, int friendId) {
-        // Удаляем дружбу в обе стороны
-        String sql = "DELETE FROM friendships WHERE (user_id = ? AND friend_id = ?) OR (user_id = ? AND friend_id = ?)";
-        jdbcTemplate.update(sql, userId, friendId, friendId, userId);
+        // Удаляем ОДНОСТОРОННЮЮ дружбу - только от userId к friendId
+        String sql = "DELETE FROM friendships WHERE user_id = ? AND friend_id = ?";
+        jdbcTemplate.update(sql, userId, friendId);
     }
 
     @Override
