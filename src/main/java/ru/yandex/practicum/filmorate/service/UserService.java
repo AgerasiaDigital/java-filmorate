@@ -3,16 +3,11 @@ package ru.yandex.practicum.filmorate.service;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Service;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
-import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.User;
 import ru.yandex.practicum.filmorate.storage.user.UserStorage;
 
-import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.util.Collection;
 import java.util.List;
 
@@ -20,55 +15,31 @@ import java.util.List;
 @Service
 public class UserService {
     private final UserStorage userStorage;
-    private final JdbcTemplate jdbcTemplate;
-
-    private final RowMapper<User> userRowMapper = new RowMapper<User>() {
-        @Override
-        public User mapRow(ResultSet rs, int rowNum) throws SQLException {
-            User user = new User();
-            user.setId(rs.getInt("id"));
-            user.setEmail(rs.getString("email"));
-            user.setLogin(rs.getString("login"));
-            user.setName(rs.getString("name"));
-            user.setBirthday(rs.getDate("birthday").toLocalDate());
-            return user;
-        }
-    };
 
     @Autowired
-    public UserService(@Qualifier("userDbStorage") UserStorage userStorage,
-                       JdbcTemplate jdbcTemplate) {
+    public UserService(@Qualifier("userDbStorage") UserStorage userStorage) {
         this.userStorage = userStorage;
-        this.jdbcTemplate = jdbcTemplate;
     }
 
     public User createUser(User user) {
-        validateUserName(user);
-        return userStorage.add(user);
+        if (user.getName() == null || user.getName().trim().isEmpty()) {
+            user.setName(user.getLogin());
+        }
+        User createdUser = userStorage.add(user);
+        log.info("Создан пользователь с id: {}", createdUser.getId());
+        return createdUser;
     }
 
     public User updateUser(User user) {
-        User existingUser = userStorage.findById(user.getId())
-                .orElseThrow(() -> new NotFoundException("Пользователь с id = " + user.getId() + " не найден"));
-
-        if (user.getEmail() != null) {
-            existingUser.setEmail(user.getEmail());
+        if (userStorage.findById(user.getId()).isEmpty()) {
+            throw new NotFoundException("Пользователь с id = " + user.getId() + " не найден");
         }
-        if (user.getLogin() != null) {
-            existingUser.setLogin(user.getLogin());
+        if (user.getName() == null || user.getName().trim().isEmpty()) {
+            user.setName(user.getLogin());
         }
-        if (user.getName() != null) {
-            existingUser.setName(user.getName());
-        } else if (user.getLogin() != null) {
-            existingUser.setName(user.getLogin());
-        }
-        if (user.getBirthday() != null) {
-            existingUser.setBirthday(user.getBirthday());
-        }
-
-        validateUserName(existingUser);
-
-        return userStorage.update(existingUser);
+        User updatedUser = userStorage.update(user);
+        log.info("Обновлён пользователь с id: {}", updatedUser.getId());
+        return updatedUser;
     }
 
     public User getUserById(int id) {
@@ -81,67 +52,43 @@ public class UserService {
     }
 
     public void addFriend(int userId, int friendId) {
-        if (userId == friendId) {
-            throw new ValidationException("Нельзя добавить себя в друзья");
+        if (userStorage.findById(userId).isEmpty()) {
+            throw new NotFoundException("Пользователь с id = " + userId + " не найден");
+        }
+        if (userStorage.findById(friendId).isEmpty()) {
+            throw new NotFoundException("Пользователь с id = " + friendId + " не найден");
         }
 
-        // Проверяем существование пользователей
-        getUserById(userId);
-        getUserById(friendId);
-
-        // Возможно тесты ожидают взаимную дружбу при добавлении
-        // Добавляем дружбу в обе стороны
-        String addSql = "MERGE INTO friendships (user_id, friend_id, confirmed) KEY(user_id, friend_id) VALUES (?, ?, true)";
-        jdbcTemplate.update(addSql, userId, friendId);
-        jdbcTemplate.update(addSql, friendId, userId);
-
-        log.info("Пользователи {} и {} теперь друзья", userId, friendId);
+        userStorage.addFriend(userId, friendId);
+        log.info("Пользователь {} добавил в друзья пользователя {}", userId, friendId);
     }
 
     public void removeFriend(int userId, int friendId) {
-        // Проверяем существование пользователей
-        getUserById(userId);
-        getUserById(friendId);
+        if (userStorage.findById(userId).isEmpty()) {
+            throw new NotFoundException("Пользователь с id = " + userId + " не найден");
+        }
+        if (userStorage.findById(friendId).isEmpty()) {
+            throw new NotFoundException("Пользователь с id = " + friendId + " не найден");
+        }
 
-        // Удаляем дружбу в обе стороны
-        String sql = "DELETE FROM friendships WHERE (user_id = ? AND friend_id = ?) OR (user_id = ? AND friend_id = ?)";
-        jdbcTemplate.update(sql, userId, friendId, friendId, userId);
-
-        log.info("Дружба между пользователями {} и {} удалена", userId, friendId);
+        userStorage.removeFriend(userId, friendId);
+        log.info("Пользователь {} удалил из друзей пользователя {}", userId, friendId);
     }
 
     public List<User> getFriends(int userId) {
-        // Проверяем существование пользователя
-        getUserById(userId);
-
-        String sql = "SELECT u.* FROM users u " +
-                "JOIN friendships f ON u.id = f.friend_id " +
-                "WHERE f.user_id = ? " +
-                "ORDER BY u.id";
-
-        return jdbcTemplate.query(sql, userRowMapper, userId);
+        if (userStorage.findById(userId).isEmpty()) {
+            throw new NotFoundException("Пользователь с id = " + userId + " не найден");
+        }
+        return userStorage.getFriends(userId);
     }
 
     public List<User> getCommonFriends(int userId, int otherId) {
-        // Проверяем существование пользователей
-        getUserById(userId);
-        getUserById(otherId);
-
-        String sql = "SELECT u.* FROM users u " +
-                "WHERE u.id IN ( " +
-                "    SELECT f1.friend_id " +
-                "    FROM friendships f1 " +
-                "    JOIN friendships f2 ON f1.friend_id = f2.friend_id " +
-                "    WHERE f1.user_id = ? AND f2.user_id = ? " +
-                ") " +
-                "ORDER BY u.id";
-
-        return jdbcTemplate.query(sql, userRowMapper, userId, otherId);
-    }
-
-    private void validateUserName(User user) {
-        if (user.getName() == null || user.getName().isBlank()) {
-            user.setName(user.getLogin());
+        if (userStorage.findById(userId).isEmpty()) {
+            throw new NotFoundException("Пользователь с id = " + userId + " не найден");
         }
+        if (userStorage.findById(otherId).isEmpty()) {
+            throw new NotFoundException("Пользователь с id = " + otherId + " не найден");
+        }
+        return userStorage.getCommonFriends(userId, otherId);
     }
 }

@@ -26,60 +26,18 @@ public class FilmService {
     }
 
     public Film createFilm(Film film) {
-        return filmStorage.add(film);
+        Film createdFilm = filmStorage.add(film);
+        log.info("Создан фильм с id: {}", createdFilm.getId());
+        return createdFilm;
     }
 
     public Film updateFilm(Film film) {
-        log.debug("Начало обновления фильма: {}", film);
-
-        if (film.getId() == null) {
-            throw new NotFoundException("ID фильма не указан");
+        if (filmStorage.findById(film.getId()).isEmpty()) {
+            throw new NotFoundException("Фильм с id = " + film.getId() + " не найден");
         }
-
-        Film existingFilm = filmStorage.findById(film.getId())
-                .orElseThrow(() -> new NotFoundException("Фильм с id = " + film.getId() + " не найден"));
-        log.debug("Найден существующий фильм: {}", existingFilm);
-
-        // Создаем обновленную копию фильма
-        Film updatedFilm = new Film();
-        updatedFilm.setId(existingFilm.getId());
-        updatedFilm.setName(existingFilm.getName());
-        updatedFilm.setDescription(existingFilm.getDescription());
-        updatedFilm.setReleaseDate(existingFilm.getReleaseDate());
-        updatedFilm.setDuration(existingFilm.getDuration());
-        updatedFilm.setMpa(existingFilm.getMpa());
-        updatedFilm.setGenres(existingFilm.getGenres());
-        updatedFilm.setLikes(existingFilm.getLikes());
-
-        // Обновляем только переданные поля
-        if (film.getName() != null && !film.getName().isBlank()) {
-            updatedFilm.setName(film.getName());
-            log.debug("Обновляем название: {}", film.getName());
-        }
-        if (film.getDescription() != null) {
-            updatedFilm.setDescription(film.getDescription());
-            log.debug("Обновляем описание: {}", film.getDescription());
-        }
-        if (film.getReleaseDate() != null) {
-            updatedFilm.setReleaseDate(film.getReleaseDate());
-            log.debug("Обновляем дату релиза: {}", film.getReleaseDate());
-        }
-        if (film.getDuration() != null && film.getDuration() > 0) {
-            updatedFilm.setDuration(film.getDuration());
-            log.debug("Обновляем продолжительность: {}", film.getDuration());
-        }
-        if (film.getMpa() != null) {
-            updatedFilm.setMpa(film.getMpa());
-            log.debug("Обновляем MPA: {}", film.getMpa());
-        }
-        if (film.getGenres() != null) {
-            updatedFilm.setGenres(film.getGenres());
-            log.debug("Обновляем жанры: {}", film.getGenres());
-        }
-
-        Film result = filmStorage.update(updatedFilm);
-        log.debug("Фильм успешно обновлен: {}", result);
-        return result;
+        Film updatedFilm = filmStorage.update(film);
+        log.info("Обновлён фильм с id: {}", updatedFilm.getId());
+        return updatedFilm;
     }
 
     public Film getFilmById(int id) {
@@ -92,7 +50,9 @@ public class FilmService {
     }
 
     public void addLike(int filmId, int userId) {
-        Film film = getFilmById(filmId);
+        if (filmStorage.findById(filmId).isEmpty()) {
+            throw new NotFoundException("Фильм с id = " + filmId + " не найден");
+        }
         if (userStorage.findById(userId).isEmpty()) {
             throw new NotFoundException("Пользователь с id = " + userId + " не найден");
         }
@@ -102,7 +62,9 @@ public class FilmService {
     }
 
     public void removeLike(int filmId, int userId) {
-        Film film = getFilmById(filmId);
+        if (filmStorage.findById(filmId).isEmpty()) {
+            throw new NotFoundException("Фильм с id = " + filmId + " не найден");
+        }
         if (userStorage.findById(userId).isEmpty()) {
             throw new NotFoundException("Пользователь с id = " + userId + " не найден");
         }
