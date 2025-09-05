@@ -17,7 +17,6 @@ import java.sql.Date;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.time.LocalDate;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -49,7 +48,6 @@ public class FilmDbStorage implements FilmStorage {
 
         film.setId(keyHolder.getKey().intValue());
 
-        // Добавляем жанры batch операцией
         if (film.getGenres() != null && !film.getGenres().isEmpty()) {
             addGenresToFilm(film.getId(), film.getGenres());
         }
@@ -65,7 +63,6 @@ public class FilmDbStorage implements FilmStorage {
                 Date.valueOf(film.getReleaseDate()), film.getDuration(),
                 film.getMpa().getId(), film.getId());
 
-        // Обновляем жанры: удаляем старые и добавляем новые batch операцией
         updateFilmGenres(film.getId(), film.getGenres());
 
         log.debug("Обновлён фильм с id: {}", film.getId());
@@ -81,16 +78,16 @@ public class FilmDbStorage implements FilmStorage {
     @Override
     public Optional<Film> findById(int id) {
         String sql = """
-            SELECT f.id, f.name, f.description, f.release_date, f.duration,
-                   m.id as mpa_id, m.name as mpa_name,
-                   g.id as genre_id, g.name as genre_name
-            FROM films f
-            LEFT JOIN mpa m ON f.mpa_id = m.id
-            LEFT JOIN film_genres fg ON f.id = fg.film_id
-            LEFT JOIN genres g ON fg.genre_id = g.id
-            WHERE f.id = ?
-            ORDER BY g.id
-            """;
+                SELECT f.id, f.name, f.description, f.release_date, f.duration,
+                       m.id as mpa_id, m.name as mpa_name,
+                       g.id as genre_id, g.name as genre_name
+                FROM films f
+                LEFT JOIN mpa m ON f.mpa_id = m.id
+                LEFT JOIN film_genres fg ON f.id = fg.film_id
+                LEFT JOIN genres g ON fg.genre_id = g.id
+                WHERE f.id = ?
+                ORDER BY g.id
+                """;
 
         List<Film> films = jdbcTemplate.query(sql, new FilmWithGenresExtractor(), id);
         return films.isEmpty() ? Optional.empty() : Optional.of(films.get(0));
@@ -99,15 +96,15 @@ public class FilmDbStorage implements FilmStorage {
     @Override
     public Collection<Film> findAll() {
         String sql = """
-            SELECT f.id, f.name, f.description, f.release_date, f.duration,
-                   m.id as mpa_id, m.name as mpa_name,
-                   g.id as genre_id, g.name as genre_name
-            FROM films f
-            LEFT JOIN mpa m ON f.mpa_id = m.id
-            LEFT JOIN film_genres fg ON f.id = fg.film_id
-            LEFT JOIN genres g ON fg.genre_id = g.id
-            ORDER BY f.id, g.id
-            """;
+                SELECT f.id, f.name, f.description, f.release_date, f.duration,
+                       m.id as mpa_id, m.name as mpa_name,
+                       g.id as genre_id, g.name as genre_name
+                FROM films f
+                LEFT JOIN mpa m ON f.mpa_id = m.id
+                LEFT JOIN film_genres fg ON f.id = fg.film_id
+                LEFT JOIN genres g ON fg.genre_id = g.id
+                ORDER BY f.id, g.id
+                """;
 
         return jdbcTemplate.query(sql, new FilmWithGenresExtractor());
     }
@@ -129,20 +126,20 @@ public class FilmDbStorage implements FilmStorage {
     @Override
     public List<Film> getPopularFilms(int count) {
         String sql = """
-            SELECT f.id, f.name, f.description, f.release_date, f.duration,
-                   m.id as mpa_id, m.name as mpa_name,
-                   g.id as genre_id, g.name as genre_name,
-                   COUNT(fl.user_id) as likes_count
-            FROM films f
-            LEFT JOIN mpa m ON f.mpa_id = m.id
-            LEFT JOIN film_genres fg ON f.id = fg.film_id
-            LEFT JOIN genres g ON fg.genre_id = g.id
-            LEFT JOIN film_likes fl ON f.id = fl.film_id
-            GROUP BY f.id, f.name, f.description, f.release_date, f.duration, 
-                     m.id, m.name, g.id, g.name
-            ORDER BY likes_count DESC, f.id, g.id
-            LIMIT ?
-            """;
+                SELECT f.id, f.name, f.description, f.release_date, f.duration,
+                       m.id as mpa_id, m.name as mpa_name,
+                       g.id as genre_id, g.name as genre_name,
+                       COUNT(fl.user_id) as likes_count
+                FROM films f
+                LEFT JOIN mpa m ON f.mpa_id = m.id
+                LEFT JOIN film_genres fg ON f.id = fg.film_id
+                LEFT JOIN genres g ON fg.genre_id = g.id
+                LEFT JOIN film_likes fl ON f.id = fl.film_id
+                GROUP BY f.id, f.name, f.description, f.release_date, f.duration,
+                         m.id, m.name, g.id, g.name
+                ORDER BY likes_count DESC, f.id, g.id
+                LIMIT ?
+                """;
 
         return jdbcTemplate.query(sql, new FilmWithGenresExtractor(), count);
     }
@@ -162,7 +159,6 @@ public class FilmDbStorage implements FilmStorage {
 
     private void updateFilmGenres(int filmId, Set<Genre> genres) {
         jdbcTemplate.update("DELETE FROM film_genres WHERE film_id = ?", filmId);
-
         addGenresToFilm(filmId, genres);
     }
 
@@ -183,7 +179,6 @@ public class FilmDbStorage implements FilmStorage {
                     film.setReleaseDate(rs.getDate("release_date").toLocalDate());
                     film.setDuration(rs.getInt("duration"));
 
-                    // MPA
                     Mpa mpa = new Mpa();
                     mpa.setId(rs.getInt("mpa_id"));
                     mpa.setName(rs.getString("mpa_name"));
