@@ -1,5 +1,6 @@
 package ru.yandex.practicum.filmorate.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.Data;
 import ru.yandex.practicum.filmorate.validation.Create;
 import ru.yandex.practicum.filmorate.validation.ReleaseDateConstraint;
@@ -13,6 +14,7 @@ import java.util.LinkedHashSet;
 import java.util.Set;
 
 @Data
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class Film {
     @NotNull(groups = Update.class, message = "Id должен быть указан")
     @Null(groups = Create.class, message = "Id должен отсутствовать")

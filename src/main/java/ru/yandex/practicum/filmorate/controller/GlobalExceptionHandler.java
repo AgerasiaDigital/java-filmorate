@@ -58,6 +58,13 @@ public class GlobalExceptionHandler {
         return new ErrorResponse("Not Found", ex.getMessage());
     }
 
+    @ExceptionHandler(RuntimeException.class)
+    @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
+    public ErrorResponse handleRuntimeException(RuntimeException ex) {
+        log.error("Runtime ошибка: {}", ex.getMessage(), ex);
+        return new ErrorResponse("Internal Server Error", "Внутренняя ошибка сервера");
+    }
+
     @ExceptionHandler(Exception.class)
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
     public ErrorResponse handleGenericException(Exception ex) {

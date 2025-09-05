@@ -7,8 +7,10 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.annotation.DirtiesContext;
+import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 import ru.yandex.practicum.filmorate.model.Film;
+import ru.yandex.practicum.filmorate.model.Mpa;
 
 import java.time.LocalDate;
 
@@ -17,6 +19,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @SpringBootTest
 @AutoConfigureMockMvc
+@TestPropertySource(properties = {
+        "spring.datasource.url=jdbc:h2:mem:testdb",
+        "spring.sql.init.mode=always"
+})
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 public class FilmControllerTest {
 
@@ -34,11 +40,15 @@ public class FilmControllerTest {
         film.setReleaseDate(LocalDate.of(2000, 1, 1));
         film.setDuration(120);
 
+        Mpa mpa = new Mpa();
+        mpa.setId(1);
+        film.setMpa(mpa);
+
         mockMvc.perform(post("/films")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(film)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").value(1))
+                .andExpect(jsonPath("$.id").exists())
                 .andExpect(jsonPath("$.name").value("Test Film"));
     }
 
@@ -56,14 +66,21 @@ public class FilmControllerTest {
         film.setReleaseDate(LocalDate.of(2000, 1, 1));
         film.setDuration(120);
 
-        mockMvc.perform(post("/films")
+        Mpa mpa = new Mpa();
+        mpa.setId(1);
+        film.setMpa(mpa);
+
+        String response = mockMvc.perform(post("/films")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(film)))
-                .andExpect(status().isOk());
-
-        mockMvc.perform(get("/films/1"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").value(1));
+                .andReturn().getResponse().getContentAsString();
+
+        Film createdFilm = objectMapper.readValue(response, Film.class);
+
+        mockMvc.perform(get("/films/" + createdFilm.getId()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(createdFilm.getId()));
     }
 
     @Test
