@@ -9,6 +9,7 @@ import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.support.GeneratedKeyHolder;
 import org.springframework.jdbc.support.KeyHolder;
 import org.springframework.stereotype.Repository;
+import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.model.User;
 
 import java.sql.Date;
@@ -51,6 +52,26 @@ public class UserDbStorage implements UserStorage {
 
     @Override
     public User update(User user) {
+        Optional<User> existingUserOpt = findById(user.getId());
+        if (existingUserOpt.isEmpty()) {
+            throw new NotFoundException("Пользователь с id = " + user.getId() + " не найден");
+        }
+
+        User existingUser = existingUserOpt.get();
+
+        if (user.getEmail() == null) {
+            user.setEmail(existingUser.getEmail());
+        }
+        if (user.getLogin() == null) {
+            user.setLogin(existingUser.getLogin());
+        }
+        if (user.getName() == null) {
+            user.setName(existingUser.getName());
+        }
+        if (user.getBirthday() == null) {
+            user.setBirthday(existingUser.getBirthday());
+        }
+
         String sql = "UPDATE users SET email = ?, login = ?, name = ?, birthday = ? WHERE id = ?";
         jdbcTemplate.update(sql, user.getEmail(), user.getLogin(), user.getName(),
                 Date.valueOf(user.getBirthday()), user.getId());
