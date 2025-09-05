@@ -15,7 +15,6 @@ import java.sql.Date;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.time.LocalDate;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -84,7 +83,6 @@ public class UserDbStorage implements UserStorage {
 
     @Override
     public void addFriend(int userId, int friendId) {
-        // Добавляем дружбу в обе стороны одной транзакцией
         String sql = "MERGE INTO friendships (user_id, friend_id, confirmed) KEY(user_id, friend_id) VALUES (?, ?, true)";
         jdbcTemplate.update(sql, userId, friendId);
         jdbcTemplate.update(sql, friendId, userId);

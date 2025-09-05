@@ -17,7 +17,6 @@ import java.sql.Date;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.time.LocalDate;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -49,7 +48,6 @@ public class FilmDbStorage implements FilmStorage {
 
         film.setId(keyHolder.getKey().intValue());
 
-        // Добавляем жанры batch операцией
         if (film.getGenres() != null && !film.getGenres().isEmpty()) {
             addGenresToFilm(film.getId(), film.getGenres());
         }
@@ -65,7 +63,6 @@ public class FilmDbStorage implements FilmStorage {
                 Date.valueOf(film.getReleaseDate()), film.getDuration(),
                 film.getMpa().getId(), film.getId());
 
-        // Обновляем жанры: удаляем старые и добавляем новые batch операцией
         updateFilmGenres(film.getId(), film.getGenres());
 
         log.debug("Обновлён фильм с id: {}", film.getId());
