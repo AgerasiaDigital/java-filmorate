@@ -145,7 +145,7 @@ public class FilmService {
                 "GROUP BY f.id, f.name, f.description, f.release_date, f.duration, f.mpa_id, m.name " +
                 "ORDER BY likes_count DESC, f.id " +
                 "LIMIT ?";
-
+        //
         return jdbcTemplate.query(sql, (rs, rowNum) -> {
                     Film film = new Film();
                     film.setId(rs.getInt("id"));
