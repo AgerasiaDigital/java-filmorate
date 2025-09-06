@@ -14,6 +14,8 @@ import ru.yandex.practicum.filmorate.storage.user.UserStorage;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -59,10 +61,28 @@ public class FilmService {
         }
 
         if (film.getGenres() != null && !film.getGenres().isEmpty()) {
-            for (Genre genre : film.getGenres()) {
-                if (genre.getId() != null && genreStorage.findById(genre.getId()).isEmpty()) {
-                    throw new NotFoundException("Жанр с id = " + genre.getId() + " не найден");
-                }
+            validateGenres(film.getGenres());
+        }
+    }
+
+    private void validateGenres(Set<Genre> genres) {
+        Set<Integer> genreIds = genres.stream()
+                .map(Genre::getId)
+                .filter(id -> id != null)
+                .collect(Collectors.toSet());
+
+        if (genreIds.isEmpty()) {
+            return;
+        }
+
+        Collection<Genre> existingGenres = genreStorage.findAll();
+        Set<Integer> existingGenreIds = existingGenres.stream()
+                .map(Genre::getId)
+                .collect(Collectors.toSet());
+
+        for (Integer genreId : genreIds) {
+            if (!existingGenreIds.contains(genreId)) {
+                throw new NotFoundException("Жанр с id = " + genreId + " не найден");
             }
         }
     }
