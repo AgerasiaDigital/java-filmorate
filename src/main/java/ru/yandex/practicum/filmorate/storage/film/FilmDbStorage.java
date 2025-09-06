@@ -9,6 +9,7 @@ import org.springframework.jdbc.core.ResultSetExtractor;
 import org.springframework.jdbc.support.GeneratedKeyHolder;
 import org.springframework.jdbc.support.KeyHolder;
 import org.springframework.stereotype.Repository;
+import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.model.Genre;
 import ru.yandex.practicum.filmorate.model.Mpa;
@@ -58,6 +59,27 @@ public class FilmDbStorage implements FilmStorage {
 
     @Override
     public Film update(Film film) {
+        Film existingFilm = getExistingFilm(film.getId());
+
+        if (film.getName() == null) {
+            film.setName(existingFilm.getName());
+        }
+        if (film.getDescription() == null) {
+            film.setDescription(existingFilm.getDescription());
+        }
+        if (film.getReleaseDate() == null) {
+            film.setReleaseDate(existingFilm.getReleaseDate());
+        }
+        if (film.getDuration() == null) {
+            film.setDuration(existingFilm.getDuration());
+        }
+        if (film.getMpa() == null) {
+            film.setMpa(existingFilm.getMpa());
+        }
+        if (film.getGenres() == null) {
+            film.setGenres(existingFilm.getGenres());
+        }
+
         String sql = "UPDATE films SET name = ?, description = ?, release_date = ?, duration = ?, mpa_id = ? WHERE id = ?";
         jdbcTemplate.update(sql, film.getName(), film.getDescription(),
                 Date.valueOf(film.getReleaseDate()), film.getDuration(),
@@ -67,6 +89,26 @@ public class FilmDbStorage implements FilmStorage {
 
         log.debug("Обновлён фильм с id: {}", film.getId());
         return findById(film.getId()).orElse(film);
+    }
+
+    private Film getExistingFilm(int id) {
+        String sql = """
+                SELECT f.id, f.name, f.description, f.release_date, f.duration,
+                       m.id as mpa_id, m.name as mpa_name,
+                       g.id as genre_id, g.name as genre_name
+                FROM films f
+                LEFT JOIN mpa m ON f.mpa_id = m.id
+                LEFT JOIN film_genres fg ON f.id = fg.film_id
+                LEFT JOIN genres g ON fg.genre_id = g.id
+                WHERE f.id = ?
+                ORDER BY g.id
+                """;
+
+        List<Film> films = jdbcTemplate.query(sql, new FilmWithGenresExtractor(), id);
+        if (films.isEmpty()) {
+            throw new NotFoundException("Фильм с id = " + id + " не найден");
+        }
+        return films.get(0);
     }
 
     @Override
