@@ -9,6 +9,7 @@ import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.support.GeneratedKeyHolder;
 import org.springframework.jdbc.support.KeyHolder;
 import org.springframework.stereotype.Repository;
+import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.model.User;
 
 import java.sql.Date;
@@ -51,11 +52,39 @@ public class UserDbStorage implements UserStorage {
 
     @Override
     public User update(User user) {
+        User existingUser = loadExistingUser(user.getId());
+
+        if (user.getEmail() == null) {
+            user.setEmail(existingUser.getEmail());
+        }
+        if (user.getLogin() == null) {
+            user.setLogin(existingUser.getLogin());
+        }
+        if (user.getName() == null) {
+            user.setName(existingUser.getName());
+        }
+        if (user.getBirthday() == null) {
+            user.setBirthday(existingUser.getBirthday());
+        }
+
         String sql = "UPDATE users SET email = ?, login = ?, name = ?, birthday = ? WHERE id = ?";
         jdbcTemplate.update(sql, user.getEmail(), user.getLogin(), user.getName(),
                 Date.valueOf(user.getBirthday()), user.getId());
         log.debug("Обновлён пользователь с id: {}", user.getId());
         return user;
+    }
+
+    private User loadExistingUser(int id) {
+        String sql = "SELECT id, email, login, name, birthday FROM users WHERE id = ?";
+        try {
+            User user = jdbcTemplate.queryForObject(sql, new UserRowMapper(), id);
+            if (user == null) {
+                throw new NotFoundException("Пользователь с id = " + id + " не найден");
+            }
+            return user;
+        } catch (DataAccessException e) {
+            throw new NotFoundException("Пользователь с id = " + id + " не найден");
+        }
     }
 
     @Override
@@ -85,14 +114,13 @@ public class UserDbStorage implements UserStorage {
     public void addFriend(int userId, int friendId) {
         String sql = "MERGE INTO friendships (user_id, friend_id, confirmed) KEY(user_id, friend_id) VALUES (?, ?, true)";
         jdbcTemplate.update(sql, userId, friendId);
-        jdbcTemplate.update(sql, friendId, userId);
         log.debug("Пользователь {} добавил в друзья пользователя {}", userId, friendId);
     }
 
     @Override
     public void removeFriend(int userId, int friendId) {
-        String sql = "DELETE FROM friendships WHERE (user_id = ? AND friend_id = ?) OR (user_id = ? AND friend_id = ?)";
-        jdbcTemplate.update(sql, userId, friendId, friendId, userId);
+        String sql = "DELETE FROM friendships WHERE user_id = ? AND friend_id = ?";
+        jdbcTemplate.update(sql, userId, friendId);
         log.debug("Пользователь {} удалил из друзей пользователя {}", userId, friendId);
     }
 
